@@ -45,8 +45,22 @@ export class LoginPage {
         await this.passwordInput.fill(password);
         await this.loginButton.click();
 
-        // Wait for navigation - could be dashboard or onboarding
-        await this.page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 60000 });
+        // Race condition: wait for navigation OR error message
+        try {
+            await Promise.race([
+                this.page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 60000 }),
+                this.errorMessage.waitFor({ state: 'visible', timeout: 60000 }).then(async () => {
+                    const error = await this.errorMessage.textContent();
+                    throw new Error(`Login failed with error: ${error?.trim()}`);
+                })
+            ]);
+        } catch (error) {
+            // Rethrow explicit login errors, otherwise let timeout bubble up
+            if (error instanceof Error && error.message.includes('Login failed')) {
+                throw error;
+            }
+            throw error; // Timeout or other error
+        }
     }
 
     /**
