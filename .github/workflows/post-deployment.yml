@@ -1,6 +1,10 @@
 name: E2E Tests - Post Deployment
 
 on:
+  # Trigger on push to main (for testing)
+  push:
+    branches: [main]
+
   # Triggered by BuzzPotato deployment
   repository_dispatch:
     types: [deployment_complete]
