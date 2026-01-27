@@ -1,0 +1,28 @@
+{
+  "name": "buzzpotato-e2e-tests",
+  "version": "1.0.0",
+  "description": "Professional Playwright E2E automation framework for BuzzPotato",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test tests/smoke --project=chromium",
+    "test:auth": "playwright test tests/auth --project=chromium",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\""
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "automation",
+    "typescript",
+    "qa"
+  ],
+  "author": "Waqar",
+  "license": "MIT"
+}
