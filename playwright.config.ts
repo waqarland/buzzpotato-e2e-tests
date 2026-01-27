@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
 
-/**
- * Modern Playwright Configuration
- * Following industry best practices (2024-2026)
- */
+// Load environment variables from .env file
+dotenv.config();
+
 export default defineConfig({
     testDir: './tests',
 

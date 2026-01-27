@@ -42,12 +42,19 @@ export const test = base.extend<TestFixtures>({
     authenticatedPage: async ({ page }, use) => {
         const loginPage = new LoginPage(page);
 
-        // Fast login via API (bypass UI)
+        // Validate environment variables
+        const email = process.env.TEST_USER_EMAIL;
+        const password = process.env.TEST_USER_PASSWORD;
+
+        if (!email || !password) {
+            throw new Error(
+                'TEST_USER_EMAIL and TEST_USER_PASSWORD must be set in .env file'
+            );
+        }
+
+        // Fast login via UI
         await page.goto('/login');
-        await loginPage.loginViaUI(
-            process.env.TEST_USER_EMAIL!,
-            process.env.TEST_USER_PASSWORD!
-        );
+        await loginPage.loginViaUI(email, password);
 
         await use(page);
     },

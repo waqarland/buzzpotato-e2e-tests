@@ -22,12 +22,12 @@ export class LoginPage {
     constructor(page: Page) {
         this.page = page;
 
-        // Modern approach: use getByRole, getByLabel, getByTestId
-        this.emailInput = page.getByLabel('Email', { exact: true });
-        this.passwordInput = page.getByLabel('Password', { exact: true });
-        this.loginButton = page.getByRole('button', { name: 'Login' });
-        this.errorMessage = page.getByRole('alert');
-        this.signupLink = page.getByRole('link', { name: 'Sign up' });
+        // Use ID-based selectors matching actual BuzzPotato implementation
+        this.emailInput = page.locator('#email');
+        this.passwordInput = page.locator('#password');
+        this.loginButton = page.locator('button[type="submit"]').filter({ hasText: 'Sign In' });
+        this.errorMessage = page.locator('.bg-red-500\/10');
+        this.signupLink = page.locator('a[href="/signup"]');
     }
 
     /**
@@ -45,8 +45,8 @@ export class LoginPage {
         await this.passwordInput.fill(password);
         await this.loginButton.click();
 
-        // Wait for navigation
-        await this.page.waitForURL(/\/dashboard|\/onboarding/);
+        // Wait for navigation - could be dashboard or onboarding
+        await this.page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 60000 });
     }
 
     /**
