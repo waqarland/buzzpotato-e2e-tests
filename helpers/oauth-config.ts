@@ -1,95 +1,17 @@
 /**
  * OAuth Configuration Helper
- * Determines test environment and OAuth configuration
  * 
+ * Provides type-safe configuration management for OAuth testing.
  * Supports two modes:
- * - mock: Uses mocked OAuth flows (default, no credentials needed)
- * - real: Uses real OAuth providers (requires credentials)
- */
-
-export class OAuthConfig {
-    /**
-     * Check if running in mock OAuth mode
-     * This uses mocked OAuth endpoints and doesn't require real credentials
-     */
-    static isMockMode(): boolean {
-        return (
-            process.env.OAUTH_MODE === 'mock' ||
-            process.env.MOCK_OAUTH_ENABLED === 'true' ||
-            !process.env.OAUTH_MODE // Default to mock if not specified
-        );
-    }
-
-    /**
-     * Check if running in real OAuth mode
-     * This uses actual OAuth providers and requires credentials
-     */
-    static isRealMode(): boolean {
-        return process.env.OAUTH_MODE === 'real';
-    }
-
-    /**
-     * Validate that real OAuth environment is properly configured
-     * Throws an error if required variables are missing
-     */
-    static validateRealOAuthEnv(): void {
-        if (!this.isRealMode()) return;
-
-        const required = [
-            'LINKEDIN_CLIENT_ID',
-            'LINKEDIN_CLIENT_SECRET',
-            'LINKEDIN_TEST_ACCOUNT_EMAIL',
-            'LINKEDIN_TEST_ACCOUNT_PASSWORD',
-        ];
-
-        const missing = required.filter((key) => !process.env[key]);
-
-        if (missing.length > 0) {
-            throw new Error(
-                `Real OAuth mode requires these environment variables: ${missing.join(', ')}\n\n` +
-                    `To fix:\n` +
-                    `1. Set ${missing.map((v) => `${v}=...`).join(', ')} in .env\n` +
-                    `2. Or set OAUTH_MODE=mock to use mocked OAuth (recommended for testing)`
-            );
-        }
-    }
-
-    /**
-     * Get LinkedIn OAuth configuration based on current mode
-     */
-    static getLinkedInConfig() {
-        if (this.isMockMode()) {
-            return {
-                mode: 'mock' as const,
-                email: 'mock@test.com',
-                password: 'mock_password',
-                clientId: 'mock_client_id',
-            };
-        }
-
-        // Real mode
-        return {
-            mode: 'real' as const,
-            email: process.env.LINKEDIN_TEST_ACCOUNT_EMAIL!,
-            password: process.env.LINKEDIN_TEST_ACCOUNT_PASSWORD!,
-            clientId: process.env.LINKEDIN_CLIENT_ID!,
-        };
-    }
-
-    /**
-     * Log the current OAuth configuration (useful for debugging)
-     */
-    static logConfiguration(): void {
-        const mode = this.isMockMode() ? 'MOCK' : 'REAL';
-        console.log(`\n🔐 OAuth Testing Mode: ${mode}`);
-
-        if (this.isMockMode()) {
-            console.log('   ✓ Using mocked OAuth flows');
-            console.log('   ✓ No real LinkedIn login needed');
-            console.log('   ✓ Tests run offline-friendly\n');
-        } else {
-            console.log('   ✓ Using real OAuth providers');
-            console.log('   ⚠️  Requires valid credentials\n');
-        }
-    }
-}
+ * - mock: Mocked OAuth flows (default, no credentials needed, fast)
+ * - real: Real OAuth providers (requires credentials, true integration testing)
+ * 
+ * Follows industry best practices:
+ * - Immutable configuration objects
+ * - Type-safe environment variable handling
+ * - Validation with detailed error messages
+ * - Singleton pattern for consistency
+ * 
+ * @module helpers/oauth-config
+ * @example
+ * ```typescript\n * // Check current mode\n * if (OAuthConfig.isMockMode()) {\n *   console.log('Using mocked OAuth');\n * }\n * \n * // Get configuration with type safety\n * const config = OAuthConfig.getLinkedInConfig();\n * console.log(config.email);\n * \n * // Validate configuration\n * const result = OAuthConfig.validateRealOAuthEnv();\n * if (!result.isValid) console.error(result.message);\n * ```\n */\n\n/**\n * Supported OAuth modes\n */\nexport type OAuthMode = 'mock' | 'real';\n\n/**\n * LinkedIn OAuth configuration structure\n * Immutable configuration object for type safety\n */\nexport interface LinkedInOAuthConfig {\n  readonly mode: OAuthMode;\n  readonly email: string;\n  readonly password: string;\n  readonly clientId: string;\n}\n\n/**\n * Environment variables validation result\n * Provides detailed validation feedback\n */\ninterface ValidationResult {\n  readonly isValid: boolean;\n  readonly missing: readonly string[];\n  readonly message?: string;\n}\n\n/**\n * OAuth Configuration Helper Class\n * \n * Provides methods for determining and validating OAuth configuration.\n * Implements Singleton pattern for consistency across the codebase.\n * \n * All methods are static and immutable to ensure no configuration drift.\n * \n * @class OAuthConfig\n */\nexport class OAuthConfig {\n  private static readonly REQUIRED_REAL_MODE_VARS = [\n    'LINKEDIN_CLIENT_ID',\n    'LINKEDIN_CLIENT_SECRET',\n    'LINKEDIN_TEST_ACCOUNT_EMAIL',\n    'LINKEDIN_TEST_ACCOUNT_PASSWORD',\n  ] as const;\n\n  /**\n   * Check if running in mock OAuth mode\n   * Mock mode uses simulated OAuth endpoints and doesn't require credentials\n   * \n   * @returns true if mock mode is active, false otherwise\n   * @example\n   * ```typescript\n   * if (OAuthConfig.isMockMode()) {\n   *   // Use test data\n   * }\n   * ```\n   */\n  static isMockMode(): boolean {\n    return (\n      process.env.OAUTH_MODE === 'mock' ||\n      process.env.MOCK_OAUTH_ENABLED === 'true' ||\n      !process.env.OAUTH_MODE // Default to mock if not specified\n    );\n  }\n\n  /**\n   * Check if running in real OAuth mode\n   * Real mode uses actual OAuth providers and requires credentials\n   * \n   * @returns true if real mode is active, false otherwise\n   * @example\n   * ```typescript\n   * if (OAuthConfig.isRealMode()) {\n   *   // Validate credentials\n   * }\n   * ```\n   */\n  static isRealMode(): boolean {\n    return process.env.OAUTH_MODE === 'real';\n  }\n\n  /**\n   * Get current OAuth mode\n   * \n   * @returns The current OAuth mode ('mock' or 'real')\n   * @example\n   * ```typescript\n   * const mode = OAuthConfig.getMode();\n   * console.log(`Running in ${mode} mode`);\n   * ```\n   */\n  static getMode(): OAuthMode {\n    return this.isMockMode() ? 'mock' : 'real';\n  }\n\n  /**\n   * Validate real OAuth environment configuration\n   * \n   * Checks that all required environment variables are set in real mode.\n   * Returns detailed validation result instead of throwing immediately.\n   * \n   * @returns Validation result with details about any missing variables\n   * @throws Error if called with invalid configuration in real mode\n   * @example\n   * ```typescript\n   * const validation = OAuthConfig.validateRealOAuthEnv();\n   * if (!validation.isValid) {\n   *   console.error(validation.message);\n   * }\n   * ```\n   */\n  static validateRealOAuthEnv(): ValidationResult {\n    if (!this.isRealMode()) {\n      return { isValid: true, missing: [] };\n    }\n\n    const missing = OAuthConfig.REQUIRED_REAL_MODE_VARS.filter(\n      (key) => !process.env[key]\n    );\n\n    if (missing.length > 0) {\n      const message =\n        `Real OAuth mode requires these environment variables: ${missing.join(', ')}\n\n` +\n        `To fix:\n` +\n        `1. Set ${missing.map((v) => `${v}=...`).join(', ')} in .env\n` +\n        `2. Or set OAUTH_MODE=mock to use mocked OAuth (recommended for testing)`;\n\n      return {\n        isValid: false,\n        missing,\n        message,\n      };\n    }\n\n    return { isValid: true, missing: [] };\n  }\n\n  /**\n   * Get LinkedIn OAuth configuration based on current mode\n   * \n   * Returns a type-safe configuration object suitable for the current mode.\n   * In mock mode, returns hardcoded test values.\n   * In real mode, reads from environment variables after validation.\n   * \n   * @returns LinkedIn OAuth configuration object\n   * @throws Error if in real mode and credentials are missing\n   * @example\n   * ```typescript\n   * try {\n   *   const config = OAuthConfig.getLinkedInConfig();\n   *   console.log(`Using ${config.mode} mode`);\n   * } catch (error) {\n   *   console.error('Configuration error:', error.message);\n   * }\n   * ```\n   */\n  static getLinkedInConfig(): LinkedInOAuthConfig {\n    if (this.isMockMode()) {\n      return {\n        mode: 'mock',\n        email: 'mock@test.com',\n        password: 'mock_password',\n        clientId: 'mock_client_id',\n      };\n    }\n\n    // Validate real mode first\n    const validation = this.validateRealOAuthEnv();\n    if (!validation.isValid) {\n      throw new Error(\n        `Cannot get LinkedIn config in real mode: ${validation.message}`\n      );\n    }\n\n    // All variables are guaranteed to exist after validation\n    return {\n      mode: 'real',\n      email: process.env.LINKEDIN_TEST_ACCOUNT_EMAIL!,\n      password: process.env.LINKEDIN_TEST_ACCOUNT_PASSWORD!,\n      clientId: process.env.LINKEDIN_CLIENT_ID!,\n    };\n  }\n\n  /**\n   * Log current OAuth configuration\n   * \n   * Outputs formatted configuration information to console.\n   * Useful for debugging and CI/CD verification.\n   * Does not log sensitive values like passwords.\n   * \n   * @example\n   * ```typescript\n   * OAuthConfig.logConfiguration();\n   * // Output:\n   * // 🔐 OAuth Testing Mode: MOCK\n   * //    ✓ Using mocked OAuth flows\n   * //    ✓ No real LinkedIn login needed\n   * ```\n   */\n  static logConfiguration(): void {\n    const mode = this.getMode().toUpperCase();\n    console.log(`\n🔐 OAuth Testing Mode: ${mode}`);\n\n    if (this.isMockMode()) {\n      console.log('   ✓ Using mocked OAuth flows');\n      console.log('   ✓ No real LinkedIn login needed');\n      console.log('   ✓ Tests run offline-friendly\n');\n    } else {\n      console.log('   ✓ Using real OAuth providers');\n      const validation = this.validateRealOAuthEnv();\n      if (validation.isValid) {\n        console.log('   ✓ All required credentials configured\n');\n      } else {\n        console.warn('   ⚠️  Missing credentials:', validation.missing.join(', '));\n      }\n    }\n  }\n}
