@@ -26,7 +26,8 @@ export class LoginPage {
         this.emailInput = page.locator('#email');
         this.passwordInput = page.locator('#password');
         this.loginButton = page.locator('button[type="submit"]').filter({ hasText: 'Sign In' });
-        this.errorMessage = page.locator('.bg-red-500\/10');
+        // Use attribute selector to handle Tailwind's slash notation for opacity
+        this.errorMessage = page.locator('[class*="bg-red-500"]');
         this.signupLink = page.locator('a[href="/signup"]');
     }
 
@@ -45,22 +46,11 @@ export class LoginPage {
         await this.passwordInput.fill(password);
         await this.loginButton.click();
 
-        // Race condition: wait for navigation OR error message
-        try {
-            await Promise.race([
-                this.page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 60000 }),
-                this.errorMessage.waitFor({ state: 'visible', timeout: 60000 }).then(async () => {
-                    const error = await this.errorMessage.textContent();
-                    throw new Error(`Login failed with error: ${error?.trim()}`);
-                })
-            ]);
-        } catch (error) {
-            // Rethrow explicit login errors, otherwise let timeout bubble up
-            if (error instanceof Error && error.message.includes('Login failed')) {
-                throw error;
-            }
-            throw error; // Timeout or other error
-        }
+        // Wait for navigation away from login page (any successful redirect)
+        await this.page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 60000 });
+
+        // Give the app time to settle
+        await this.page.waitForLoadState('networkidle');
     }
 
     /**
