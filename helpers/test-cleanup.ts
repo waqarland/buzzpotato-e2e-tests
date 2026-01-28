@@ -1,4 +1,40 @@
-/**\n * Test Data Cleanup Utilities\n *\n * Provides reusable cleanup functions to prevent test data pollution and\n * ensure tests don't interfere with each other.\n *\n * Implements best practices for test cleanup:\n * - Non-destructive: Cleanup failures don't fail tests\n * - Comprehensive: Removes all test artifacts\n * - Composable: Methods can be combined for different scenarios\n * - Well-documented: Clear errors and logs\n *\n * @module helpers/test-cleanup\n * @example\n * ```typescript\n * // In test fixture\n * test.afterEach(async ({ authenticatedPage, testCleanup }) => {\n *     await testCleanup.disconnectAllIntegrations();\n * });\n * ```\n */\n\nimport { Page } from '@playwright/test';\n\n/**\n * Supported integration names\n */\ntype IntegrationName = 'linkedin' | 'twitter' | 'facebook';\n\n/**\n * Integration cleanup result\n */\ninterface CleanupResult {\n  readonly integration: IntegrationName;\n  readonly success: boolean;\n  readonly message: string;\n}
+/**
+ * Test Data Cleanup Utilities
+ *
+ * Provides reusable cleanup functions to prevent test data pollution and
+ * ensure tests don't interfere with each other.
+ *
+ * Implements best practices for test cleanup:
+ * - Non-destructive: Cleanup failures don't fail tests
+ * - Comprehensive: Removes all test artifacts
+ * - Composable: Methods can be combined for different scenarios
+ * - Well-documented: Clear errors and logs
+ *
+ * @module helpers/test-cleanup
+ * @example
+ * ```typescript
+ * // In test fixture
+ * test.afterEach(async ({ authenticatedPage, testCleanup }) => {
+ *     await testCleanup.disconnectAllIntegrations();
+ * });
+ * ```
+ */
+
+import { Page } from '@playwright/test';
+
+/**
+ * Supported integration names
+ */
+type IntegrationName = 'linkedin' | 'twitter' | 'facebook';
+
+/**
+ * Integration cleanup result
+ */
+interface CleanupResult {
+  readonly integration: IntegrationName;
+  readonly success: boolean;
+  readonly message: string;
+}
 
 export class TestCleanup {
     constructor(private page: Page) {}
